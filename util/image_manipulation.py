@@ -1,9 +1,12 @@
 import warnings
+import io
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.widgets import CheckButtons, Button, Slider
 from matplotlib.axes import SubplotBase
+from matplotlib.path import Path
+from PIL import Image
 
 
 class ImageSubplot:
@@ -11,13 +14,13 @@ class ImageSubplot:
         self,
         img: np.ndarray,
         title: str,
-        visibility: bool,
+        visible: bool,
         conversion=lambda im: im,
         ax=None,
     ):
         self.image = img
         self.title = title
-        self.visibility = visibility
+        self.visible = visible
         self.conversion = conversion
         self.ax = ax
 
@@ -25,7 +28,7 @@ class ImageSubplot:
         return self.conversion(self.image)
 
     def __bool__(self):
-        return self.visibility
+        return self.visible
 
 
 class Interactive2DFFT:
@@ -33,7 +36,7 @@ class Interactive2DFFT:
         self,
         image: np.ndarray,
         isolated_channel: int = 0,
-        labels: list = ["Original", "FFT", "Filtered FFT", "Inverse FFT"],
+        labels: list = ["Original Image", "FFT", "Filtered FFT", "Inverse FFT"],
         initial_visibility: np.array = np.array([True, True, True, True]),
         create_plot: bool = True,
         gridspec: dict = {"nrows": 2, "ncols": 6, "left": 0.2, "right": 0.95},
@@ -55,6 +58,7 @@ class Interactive2DFFT:
             initial_visibility[1],
             lambda im: np.log(np.abs(im)),
         )
+        self.fft_backup = self.fft.image.copy()
         self.filtered_fft = ImageSubplot(
             self.fft.image,
             labels[2],
@@ -97,17 +101,20 @@ class Interactive2DFFT:
         self.toggle_brush.on_clicked(self.__enable_brush)
 
     def reset_figure(self, event=None):
+        self.filtered_fft.image = self.fft_backup.copy()
+        self.ifft_img.image = np.fft.ifft2(np.fft.ifftshift(self.filtered_fft.image))
         assert len(self.display_images) == 4
         for i in range(4):
             if self.display_images[i].ax is not None:
                 self.fig.delaxes(self.display_images[i].ax)
-            if not self.display_images[i].visibility:
+            if not self.display_images[i].visible:
                 self.check.set_active(i)
-                self.display_images[i].visibility = True
+                self.display_images[i].visible = True
             self.display_images[i].ax = self.fig.add_subplot(
                 self.gs[int(i / 2), (i % 2) * 3 : (i % 2) * 3 + 3],
                 title=self.display_images[i].title,
-                visible=self.display_images[i].visibility,
+                facecolor="black",
+                visible=self.display_images[i].visible,
             )
             self.display_images[i].ax.imshow(
                 self.display_images[i](), cmap="gray" if i != 0 else None
@@ -117,8 +124,8 @@ class Interactive2DFFT:
     def arrange_pictures(self, label=None):
         # assert len(self.display_images) == 4
         index = self.labels.index(label)
-        self.display_images[index].visibility = not self.display_images[index].visibility
-        self.visible_axes = np.sum([x.visibility for x in self.display_images])
+        self.display_images[index].visible = not self.display_images[index].visible
+        self.visible_axes = np.sum([x.visible for x in self.display_images])
         condition1 = lambda x: slice(None, None)
         if self.visible_axes == 1:
             condition2 = condition1
@@ -135,10 +142,10 @@ class Interactive2DFFT:
             )
         cnt = 0
         for i, img in enumerate(self.display_images):
-            if img.visibility:
+            if img.visible:
                 self.display_images[i].ax.set_subplotspec(self.gs[condition1(cnt), condition2(cnt)])
                 cnt += 1
-            self.__setaxis(i, img.visibility)
+            self.__setaxis(i, img.visible)
         if cnt > 0 and self.brush is not None:
             self.brush.reset_preview_ratio()
             self.brush.update_brush_preview()
@@ -159,16 +166,43 @@ class Interactive2DFFT:
                 self, brush_size=brush_size, max_brush_size=brush_size * 6, name="Eraser"
             )
             self.brush.update_brush_preview()
+            self.fft_mask = np.ones(self.fft.image.shape)
+            self.tmp_ax = self.fig.add_subplot(
+                visible=False,
+            )
+            self.tmp_im = self.tmp_ax.imshow(self.fft_mask, cmap=plt.cm.binary)
+
         else:
             self.brush.preview_brush.set_visible(True)
             self.brush.brush_size_slider.ax.set_visible(True)
-        self.toggle_brush.label.set_text("Disable eraser")
+        self.toggle_brush.label.set_text("Disable eraser and begin IFFT")
         self.toggle_brush.on_clicked(self.__disable_brush)
 
     def __disable_brush(self, event=None):
         self.brush.brush_size_slider.ax.set_visible(False)
         self.brush.preview_brush.set_visible(False)
         plt.ioff()
+        bbox = self.tmp_im.get_tightbbox(self.fig.canvas.get_renderer())
+        with io.BytesIO() as buffer:
+            self.tmp_ax.set_visible(True)
+            self.fig.savefig(
+                buffer,
+                format="png",
+                bbox_inches=bbox.transformed(self.fig.dpi_scale_trans.inverted()),
+                cmap=plt.cm.binary,
+            )
+            self.tmp_ax.set_visible(False)
+            buffer.seek(0)
+            tmp_mask = Image.open(buffer)
+            tmp_mask = tmp_mask.convert("1")
+            tmp_mask = tmp_mask.resize(self.fft.image.shape[::-1])
+            self.fft_mask = np.array(tmp_mask)
+            self.filtered_fft.image = self.fft.image * self.fft_mask
+            self.filtered_fft.ax.imshow(self.filtered_fft(), cmap="gray")
+            self.ifft_img.image = np.fft.ifft2(np.fft.ifftshift(self.filtered_fft.image))
+            self.ifft_img.ax.imshow(self.ifft_img(), cmap="gray")
+            plt.draw()
+
         self.toggle_brush.label.set_text("Enable eraser")
         self.toggle_brush.on_clicked(self.__enable_brush)
 
@@ -214,10 +248,11 @@ class BrushHandler:
         self.brush_exist = False
         self.x0, self.y0 = 0, 0
         self.pressevent = None
+        self.del_coords = []
 
     def reset_preview_ratio(self):
         for subplot in self.session.display_images:
-            if subplot.visibility:
+            if subplot.visible:
                 self.preview_ratio = (
                     np.max(subplot.image.shape[:2]) / np.min(subplot.ax.get_position().bounds[2:])
                 ) * np.min(self.preview_brush.get_position().bounds[2:])
@@ -233,13 +268,18 @@ class BrushHandler:
             )
 
     def on_press(self, event):
-        if event.inaxes is not None and event.button == 1:
+        if (
+            event.inaxes is not None
+            and event.button == 1
+            and not self.fig.canvas.widgetlock.locked()
+        ):
             if not isinstance(event.inaxes, SubplotBase):
                 return
             else:
                 if self.brush_exist:
                     self.current_brush.remove()
                     self.x0, self.y0 = event.xdata, event.ydata
+                    self.del_coords.append((event.xdata, event.ydata))
                     self.current_brush = event.inaxes.add_patch(
                         patches.Circle(
                             (event.xdata, event.ydata),
@@ -250,6 +290,7 @@ class BrushHandler:
                     )
                 else:
                     self.x0, self.y0 = event.xdata, event.ydata
+                    self.del_coords.append((event.xdata, event.ydata))
                     self.current_brush = event.inaxes.add_patch(
                         patches.Circle(
                             (event.xdata, event.ydata),
@@ -259,22 +300,34 @@ class BrushHandler:
                         )
                     )
                     self.brush_exist = True
-        else:
-            if self.brush_exist:
-                self.x0, self.y0 = 0, 0
-                if isinstance(self.current_brush, patches.Circle):
-                    self.current_brush.remove()
-                self.brush_exist = False
-            return
 
         self.pressevent = event
 
     def on_release(self, event):
-        self.pressevent = None
         self.x0, self.y0 = 0, 0
         if isinstance(self.current_brush, patches.Circle) and self.brush_exist:
             self.current_brush.remove()
         self.brush_exist = False
+        if self.del_coords:
+            del_path = Path(self.del_coords)
+            patch = patches.PathPatch(
+                del_path,
+                edgecolor="black",
+                facecolor="none",
+                capstyle="round",
+                linewidth=self.brush_size * 2,
+            )
+            self.pressevent.inaxes.add_patch(patch)
+            new_patch = patches.PathPatch(
+                del_path,
+                edgecolor="black",
+                facecolor="none",
+                capstyle="round",
+                linewidth=self.brush_size * 2,
+            )
+            self.session.tmp_ax.add_patch(new_patch)
+            self.pressevent = None
+            self.del_coords = []
 
     def on_move(self, event):
         if (
@@ -282,12 +335,13 @@ class BrushHandler:
             or event.inaxes != self.pressevent.inaxes
             or event.inaxes is None
             or event.button != 1
+            or self.fig.canvas.widgetlock.locked()
         ):
             return
-
         dx = event.xdata - self.pressevent.xdata
         dy = event.ydata - self.pressevent.ydata
         self.current_brush.center = self.x0 + dx, self.y0 + dy
+        self.del_coords.append((event.xdata, event.ydata))
 
 
 def extract_channel(img, channel: int):

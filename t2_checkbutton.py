@@ -4,8 +4,8 @@ from util.filter import *
 from util.image_manipulation import *
 from util.plotter import *
 
-# image = plt.imread("./images/frame01284.png")
-image = plt.imread("./images/bright.png")
+image = plt.imread("./images/frame01284.png")
+# image = plt.imread("./images/bright.png")
 
 analyzed_image = Interactive2DFFT(image)
 analyzed_image.reset_figure()
