@@ -1,7 +1,9 @@
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from matplotlib.widgets import CheckButtons, Button
+from matplotlib.axes import SubplotBase
 
 
 class ImageSubplot:
@@ -76,6 +78,7 @@ class Interactive2DFFT:
         if create_plot:
             self.create_plot(labels, initial_visibility, **kwargs)
             self.gs = self.fig.add_gridspec(**gridspec)
+            self.brush = None
 
     def __setaxis(self, image_index, state: bool):
         self.display_images[image_index].ax.set_visible(state)
@@ -88,7 +91,10 @@ class Interactive2DFFT:
         self.reset_button = Button(
             plt.axes([0.05, 0.325, 0.1, 0.05]), "Reset figure to initial state"
         )
+
         self.reset_button.on_clicked(self.reset_figure)
+        self.toggle_brush = Button(plt.axes([0.05, 0.25, 0.1, 0.05]), "Enable brush")
+        self.toggle_brush.on_clicked(self.__enable_brush)
 
     def reset_figure(self, event=None):
         assert len(self.display_images) == 4
@@ -135,10 +141,85 @@ class Interactive2DFFT:
             self.__setaxis(i, img.visibility)
         plt.draw()
 
+    def __enable_brush(self, event=None):
+        plt.ion()
+        self.brush = BrushHandler(self)
+        self.toggle_brush.label.set_text("Disable brush")
+        self.toggle_brush.on_clicked(self.__disable_brush)
+
+    def __disable_brush(self, event=None):
+        if self.brush is not None:
+            self.brush = None
+        plt.ioff()
+        self.toggle_brush.label.set_text("Enable brush")
+        self.toggle_brush.on_clicked(self.__enable_brush)
+
     def apply_filter(self, filter_func, **kwargs):
         self.filtered_fft.image = filter_func(self.fft.image, **kwargs)
         self.ifft_img.image = np.fft.ifft2(np.fft.ifftshift(self.filtered_fft.image))
         self.reset_figure(None)
+
+
+class BrushHandler:
+    def __init__(self, session: Interactive2DFFT, brush_size=100, **kwargs):
+        self.session = session
+        self.fig = session.fig
+        self.brush_size = brush_size
+        self.brush_circle = patches.Circle((0, 0), brush_size)
+        self.fig.canvas.mpl_connect("button_press_event", self.on_press)
+        self.fig.canvas.mpl_connect("button_release_event", self.on_release)
+        self.fig.canvas.mpl_connect("motion_notify_event", self.on_move)
+        self.current_brush = None
+        self.brush_exist = False
+        self.x0, self.y0 = 0, 0
+        self.pressevent = None
+
+    def on_press(self, event):
+        if event.inaxes is not None and event.button == 1:
+            if not isinstance(event.inaxes, SubplotBase):
+                return
+            else:
+                if self.brush_exist:
+                    self.current_brush.remove()
+                    self.x0, self.y0 = event.xdata, event.ydata
+                    self.current_brush = event.inaxes.add_patch(
+                        patches.Circle((event.xdata, event.ydata), self.brush_size)
+                    )
+                else:
+                    self.x0, self.y0 = event.xdata, event.ydata
+                    self.current_brush = event.inaxes.add_patch(
+                        patches.Circle((event.xdata, event.ydata), self.brush_size)
+                    )
+                    self.brush_exist = True
+        else:
+            if self.brush_exist:
+                self.x0, self.y0 = 0, 0
+                if isinstance(self.current_brush, patches.Circle) and self.brush_exist:
+                    self.current_brush.remove()
+                self.brush_exist = False
+            return
+
+        self.pressevent = event
+
+    def on_release(self, event):
+        self.pressevent = None
+        self.x0, self.y0 = 0, 0
+        if isinstance(self.current_brush, patches.Circle) and self.brush_exist:
+            self.current_brush.remove()
+        self.brush_exist = False
+
+    def on_move(self, event):
+        if (
+            self.pressevent is None
+            or event.inaxes != self.pressevent.inaxes
+            or event.inaxes is None
+            or event.button != 1
+        ):
+            return
+
+        dx = event.xdata - self.pressevent.xdata
+        dy = event.ydata - self.pressevent.ydata
+        self.current_brush.center = self.x0 + dx, self.y0 + dy
 
 
 def extract_channel(img, channel: int):
