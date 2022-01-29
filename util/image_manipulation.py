@@ -2,7 +2,7 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.widgets import CheckButtons, Button
+from matplotlib.widgets import CheckButtons, Button, Slider
 from matplotlib.axes import SubplotBase
 
 
@@ -93,7 +93,7 @@ class Interactive2DFFT:
         )
 
         self.reset_button.on_clicked(self.reset_figure)
-        self.toggle_brush = Button(plt.axes([0.05, 0.25, 0.1, 0.05]), "Enable brush")
+        self.toggle_brush = Button(plt.axes([0.05, 0.575, 0.1, 0.05]), "Enable eraser")
         self.toggle_brush.on_clicked(self.__enable_brush)
 
     def reset_figure(self, event=None):
@@ -139,19 +139,37 @@ class Interactive2DFFT:
                 self.display_images[i].ax.set_subplotspec(self.gs[condition1(cnt), condition2(cnt)])
                 cnt += 1
             self.__setaxis(i, img.visibility)
+        if cnt > 0 and self.brush is not None:
+            self.brush.reset_preview_ratio()
+            self.brush.update_brush_preview()
         plt.draw()
 
     def __enable_brush(self, event=None):
         plt.ion()
-        self.brush = BrushHandler(self)
-        self.toggle_brush.label.set_text("Disable brush")
+        if self.brush is None:
+            brush_size = int(
+                (
+                    np.minimum(
+                        self.original_image.image.shape[0], self.original_image.image.shape[1]
+                    )
+                    / 40
+                )
+            )
+            self.brush = BrushHandler(
+                self, brush_size=brush_size, max_brush_size=brush_size * 6, name="Eraser"
+            )
+            self.brush.update_brush_preview()
+        else:
+            self.brush.preview_brush.set_visible(True)
+            self.brush.brush_size_slider.ax.set_visible(True)
+        self.toggle_brush.label.set_text("Disable eraser")
         self.toggle_brush.on_clicked(self.__disable_brush)
 
     def __disable_brush(self, event=None):
-        if self.brush is not None:
-            self.brush = None
+        self.brush.brush_size_slider.ax.set_visible(False)
+        self.brush.preview_brush.set_visible(False)
         plt.ioff()
-        self.toggle_brush.label.set_text("Enable brush")
+        self.toggle_brush.label.set_text("Enable eraser")
         self.toggle_brush.on_clicked(self.__enable_brush)
 
     def apply_filter(self, filter_func, **kwargs):
@@ -161,11 +179,34 @@ class Interactive2DFFT:
 
 
 class BrushHandler:
-    def __init__(self, session: Interactive2DFFT, brush_size=100, **kwargs):
+    def __init__(self, session: Interactive2DFFT, brush_size=25, max_brush_size=150, **kwargs):
         self.session = session
         self.fig = session.fig
         self.brush_size = brush_size
-        self.brush_circle = patches.Circle((0, 0), brush_size)
+        self.name = kwargs["name"] if "name" in kwargs else "Brush"
+        self.brush_facecolor = kwargs["facecolor"] if "facecolor" in kwargs else "#dadce0"
+        self.brush_edgecolor = kwargs["edgecolor"] if "edgecolor" in kwargs else "#5865f2"
+        self.preview_brush = plt.axes([0.02, 0.675, 0.16, 0.325])
+        self.preview_brush.set_aspect("equal", adjustable="box")
+        self.preview_brush.axis("off")
+        self.reset_preview_ratio()
+        self.preview_circle = patches.Circle(
+            (0.5, (self.brush_size / self.preview_ratio) + 0.05),
+            self.brush_size / self.preview_ratio,
+            edgecolor=self.brush_edgecolor,
+            facecolor=self.brush_facecolor,
+        )
+        self.brush_size_slider = Slider(
+            plt.axes([0.05, 0.65, 0.1, 0.025]),
+            f"{self.name} size",
+            1,
+            max_brush_size,
+            valinit=self.brush_size,
+            valstep=1,
+            initcolor="red",
+        )
+        self.brush_size_slider.on_changed(self.update_brush_preview)
+
         self.fig.canvas.mpl_connect("button_press_event", self.on_press)
         self.fig.canvas.mpl_connect("button_release_event", self.on_release)
         self.fig.canvas.mpl_connect("motion_notify_event", self.on_move)
@@ -173,6 +214,23 @@ class BrushHandler:
         self.brush_exist = False
         self.x0, self.y0 = 0, 0
         self.pressevent = None
+
+    def reset_preview_ratio(self):
+        for subplot in self.session.display_images:
+            if subplot.visibility:
+                self.preview_ratio = (
+                    np.max(subplot.image.shape[:2]) / np.min(subplot.ax.get_position().bounds[2:])
+                ) * np.min(self.preview_brush.get_position().bounds[2:])
+
+    def update_brush_preview(self, event=None):
+        self.brush_size = int(self.brush_size_slider.val)
+        if not self.preview_brush.patches:
+            self.preview_brush.add_patch(self.preview_circle)
+        else:
+            self.preview_brush.patches[0].set(
+                radius=self.brush_size / self.preview_ratio,
+                center=(0.5, (self.brush_size / self.preview_ratio) + 0.05),
+            )
 
     def on_press(self, event):
         if event.inaxes is not None and event.button == 1:
@@ -183,18 +241,28 @@ class BrushHandler:
                     self.current_brush.remove()
                     self.x0, self.y0 = event.xdata, event.ydata
                     self.current_brush = event.inaxes.add_patch(
-                        patches.Circle((event.xdata, event.ydata), self.brush_size)
+                        patches.Circle(
+                            (event.xdata, event.ydata),
+                            self.brush_size,
+                            edgecolor=self.brush_edgecolor,
+                            facecolor=self.brush_facecolor,
+                        )
                     )
                 else:
                     self.x0, self.y0 = event.xdata, event.ydata
                     self.current_brush = event.inaxes.add_patch(
-                        patches.Circle((event.xdata, event.ydata), self.brush_size)
+                        patches.Circle(
+                            (event.xdata, event.ydata),
+                            self.brush_size,
+                            edgecolor=self.brush_edgecolor,
+                            facecolor=self.brush_facecolor,
+                        )
                     )
                     self.brush_exist = True
         else:
             if self.brush_exist:
                 self.x0, self.y0 = 0, 0
-                if isinstance(self.current_brush, patches.Circle) and self.brush_exist:
+                if isinstance(self.current_brush, patches.Circle):
                     self.current_brush.remove()
                 self.brush_exist = False
             return
