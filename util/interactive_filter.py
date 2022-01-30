@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import enum
+from inspect import signature
 import traceback
 import warnings
 import numpy as np
@@ -91,7 +92,8 @@ class FilterBase:
         :param rows: number of rows in the filter array
         :param cols: number of columns in the filter array
         :param filter_generator: function that generates the filter array
-        :param initial_args: initial values for the arguments of the filter function
+        :param initial_args: initial values for the arguments of the filter function.
+        these args should be representing the adjustable parameters and sliders should be implemented to adjust them.
         :param initial_kwargs: initial values for the keyword arguments of the filter function
         :param kwargs: additional arguments for the filter function
         """
@@ -104,8 +106,9 @@ class FilterBase:
             self.filter_array = np.ones((rows, cols))
         else:
             self.set_filter(filter_generator)
-        self.sliders = []
         self.apply_button = None
+        self.sliders = []
+        self.binded_fig = None
 
     def __call__(self, spectrum):
         try:
@@ -116,10 +119,9 @@ class FilterBase:
             print("Cannot multiply spectrum and filter array, returning original spectrum")
             return spectrum
 
+    @abstractmethod
     def update_array(self, event=None):
-        for i, slider in enumerate(self.sliders):
-            self.args_values[i] = slider.widget.val
-        self.filter_array = self._filter_generator(self.rows, self.cols, *self.args_values, *self.kwargs_values)
+        pass
 
     def set_filter(self, func):
         try:
@@ -127,12 +129,34 @@ class FilterBase:
             if tmp.shape == (self.rows, self.cols):
                 self.filter_array = tmp
                 self._filter_generator = func
+                if len(self.args_values) + len(self.kwargs_values) != len(signature(func).parameters) - 2:
+                    self.args_values = [0] * (len(signature(func).parameters) - 2)
+
             else:
                 raise ValueError(f"Filter array shape does not match {self.filter_array.shape} and {tmp.shape}")
         except Exception:
             traceback.print_exc()
             print("Filter array cannot be generated, using default (no filtering)")
             self.filter_array = np.ones((self.rows, self.cols))
+
+    def set_active(self, active, binded_fig=None):
+        self.apply_button.ax.set_visible(active)
+        for slider in self.sliders:
+            slider.ax.set_visible(active)
+        if active:
+            self.apply_button.connect_callback()
+            if binded_fig is None:
+                print("No figure is binded to the filter, the changes will not be reflected in the figure")
+                self.binded_fig = None
+                return
+            self.binded_fig = binded_fig
+            self.binded_fig.calc_filter(self.filter_array)
+            for fil in self.binded_fig.filters.values():
+                if fil[0] is not self:
+                    fil[0].set_active(False)
+        else:
+            self.apply_button.disconnect_callback()
+            self.binded_fig = None
 
     @abstractmethod
     def make_sliders(self):
@@ -152,7 +176,22 @@ class OneCutoffFilter(FilterBase):
         self.apply_button = InteractionWidgets(
             0.8, 0.9, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
         )
+        self.apply_button.disconnect_callback()
         self.apply_button.ax.set_visible(False)
+
+    def update_array(self, event=None):
+        self.args_values[0] = self.sliders[0].widget.val
+        try:
+            self.filter_array = self._filter_generator(self.rows, self.cols, *self.args_values, *self.kwargs_values)
+        except:
+            try:
+                self.filter_array = self._filter_generator(self.rows, self.cols)
+            except Exception:
+                traceback.print_exc()
+                print("Cannot generate new filter array, filter array is not updated")
+                return
+        if self.binded_fig is not None:
+            self.binded_fig.calc_filter(self.filter_array)
 
 
 class TwoCutoffFilter(FilterBase):
@@ -176,8 +215,23 @@ class TwoCutoffFilter(FilterBase):
         )
         self.apply_button.ax.set_visible(False)
 
+    def update_array(self, event=None):
+        self.args_values[0], self.args_values[1] = self.sliders[0].widget.val
+        try:
+            self.filter_array = self._filter_generator(self.rows, self.cols, *self.args_values, *self.kwargs_values)
+        except:
+            try:
+                self.filter_array = self._filter_generator(self.rows, self.cols)
+            except Exception:
+                traceback.print_exc()
+                print("Cannot generate new filter array, filter array is not updated")
+                return
+        if self.binded_fig is not None:
+            self.binded_fig.calc_filter(self.filter_array)
+
 
 # Not fully implemented, but should work
+# Also not used in this version.
 class ManyParamsFilter(FilterBase):
     def make_sliders(self, **kwargs):
         if self.apply_button is not None:
@@ -191,6 +245,23 @@ class ManyParamsFilter(FilterBase):
             0.8, 0.9, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
         )
         self.apply_button.ax.set_visible(False)
+
+    def update_array(self, event=None):
+        for i, slider in enumerate(self.sliders):
+            self.args_values[i] = slider.widget.val
+        try:
+            self.filter_array = self._filter_generator(
+                self.rows, self.cols, *np.ravel(self.args_values), *self.kwargs_values
+            )
+        except:
+            try:
+                self.filter_array = self._filter_generator(self.rows, self.cols)
+            except Exception:
+                traceback.print_exc()
+                print("Cannot generate new filter array, filter array is not updated")
+                return
+        if self.binded_fig is not None:
+            self.binded_fig.calc_filter(self.filter_array)
 
 
 class ImageSubplot:
@@ -225,18 +296,21 @@ class ImageSubplot:
     def __call__(self):
         return self.conversion(self.image)
 
-    def update_ax(self, img: np.ndarray = None, redraw=False):
+    def update_ax(self, img: np.ndarray = None):
         """
         Updates the image of the subplot.
         :param img: new image
         """
         if img is not None:
+            if img.shape != self.image.shape:
+                raise ValueError("Image shape does not match")
             self.image = img
+            self.ax.cla()
             self.ax.imshow(self.conversion(self.image), cmap=self.cmap, **self._imshow_kwargs)
 
     def show_image(self):
+        self.ax.cla()
         self.ax.imshow(self.conversion(self.image), cmap=self.cmap, **self._imshow_kwargs)
-        # self.ax.draw()
 
 
 class InteractiveFilterFigure:
@@ -371,17 +445,23 @@ class InteractiveFilterFigure:
 
         self.filters = {
             "ideal_high_pass": (
-                OneCutoffFilter(*self._fft.shape, filter_generator=hpf_generator),
+                OneCutoffFilter(
+                    *self._fft.shape, filter_generator=hpf_generator, initial_args=[int(self._max_fft_dim / 10)]
+                ),
                 {
                     "valmin": 0,
                     "valmax": int(self._max_fft_dim / 2),
                     "valstep": 1,
-                    "valinit": int(self._max_fft_dim / 6),
+                    "valinit": int(self._max_fft_dim / 10),
                     "initcolor": "red",
                 },
             ),
             "ideal_band_pass": (
-                TwoCutoffFilter(*self._fft.shape, filter_generator=bpf_generator),
+                TwoCutoffFilter(
+                    *self._fft.shape,
+                    filter_generator=bpf_generator,
+                    initial_args=[int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)],
+                ),
                 {
                     "label": "Cutoff Frequency",
                     "valmin": 0,
@@ -395,6 +475,20 @@ class InteractiveFilterFigure:
         for fil in self.filters.values():
             fil[0].make_sliders(**fil[1])
         self.arrange_subplots()
+        self.filters["ideal_band_pass"][0].set_active(True, self)
+
+    def calc_filter(self, new_filter_array: np.ndarray):
+        if self.filter_array.shape != new_filter_array.shape:
+            raise ValueError(
+                f"Filter array shape must be the same as the original image shape: {self.filter_array.shape} != {new_filter_array.shape}"
+            )
+        self.filter_array = new_filter_array
+        self.subplots[5].update_ax(self.filter_array)
+        self.filtered_fft = np.multiply(self._fft, self.filter_array)
+        self.subplots[6].update_ax(self.filtered_fft)
+        self.inverse_fft = np.fft.ifft2(np.fft.ifftshift(self.filtered_fft))
+        self.subplots[7].update_ax(self.inverse_fft)
+        self.fig.canvas.draw()
 
     def reset_current_filter(self, event=None):
         for n in range(5, 8):
