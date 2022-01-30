@@ -306,10 +306,12 @@ class ImageSubplot:
                 raise ValueError("Image shape does not match")
             self.image = img
             self.ax.cla()
+            self.ax.set_title(self.title)
             self.ax.imshow(self.conversion(self.image), cmap=self.cmap, **self._imshow_kwargs)
 
     def show_image(self):
         self.ax.cla()
+        self.ax.set_title(self.title)
         self.ax.imshow(self.conversion(self.image), cmap=self.cmap, **self._imshow_kwargs)
 
 
@@ -329,6 +331,7 @@ class InteractiveFilterFigure:
     def __init__(
         self,
         original_image,
+        starter_filter: str = "ideal_band_pass",
         labels=[
             "Original Image",
             "Grayscale",
@@ -389,13 +392,13 @@ class InteractiveFilterFigure:
         self._non_shifted_fft = np.fft.fft2(self._grayscale_image)
         self._fft = np.fft.fftshift(self._non_shifted_fft)
         self._max_fft_dim = np.max(self._fft.shape)
-        self.filter_array = hpf_generator(*self._fft.shape, int(self._max_fft_dim / 10))
-        self.filtered_fft = np.multiply(self._fft, self.filter_array)
+        self.filter_array = np.ones(self._fft.shape)
+        self.filtered_fft = self._fft.copy()
         self.inverse_fft = np.fft.ifft2(np.fft.ifftshift(self.filtered_fft))
         self._original_transform = [
-            self.filter_array,
-            self.filtered_fft,
-            self.inverse_fft,
+            self.filter_array.copy(),
+            self.filtered_fft.copy(),
+            self.inverse_fft.copy(),
         ]
         print("2D Fourier Transform completed. Initializing matplotlib figure...")
         self._labels = labels
@@ -413,7 +416,7 @@ class InteractiveFilterFigure:
             ImageSubplot(self._fft, labels[3], initial_visibility[3], "gray", lambda im: np.log(np.abs(im)))
         )
         self.subplots.append(ImageSubplot(self._fft, labels[4], initial_visibility[4], "gray", lambda im: np.angle(im)))
-        self.subplots.append(ImageSubplot(self.filter_array, labels[5], initial_visibility[5], "gray"))
+        self.subplots.append(ImageSubplot(self.filter_array, labels[5], initial_visibility[5], "gray", vmin=0, vmax=1))
         self.subplots.append(
             ImageSubplot(self.filtered_fft, labels[6], initial_visibility[6], "gray", lambda im: np.log(np.abs(im)))
         )
@@ -433,7 +436,7 @@ class InteractiveFilterFigure:
                 actives=self._initial_visibility,
             ),
             "filter_reset_button": InteractionWidgets(
-                0.05, 0.28, 0.1, 0.05, WidgetType.BUTTON, self.reset_current_filter, label="Reset applied filter"
+                0.05, 0.28, 0.1, 0.05, WidgetType.BUTTON, self.reset_filter, label="Reset applied filter"
             ),
             "layout_reset_button": InteractionWidgets(
                 0.05, 0.21, 0.1, 0.05, WidgetType.BUTTON, self.set_figure_layout, label="Reset subplots layout"
@@ -490,9 +493,9 @@ class InteractiveFilterFigure:
         self.subplots[7].update_ax(self.inverse_fft)
         self.fig.canvas.draw()
 
-    def reset_current_filter(self, event=None):
-        for n in range(5, 8):
-            self.subplots[n].update_ax(self._original_transform[n - 4])
+    def reset_filter(self, event=None):
+        for n in (5, 6, 7):
+            self.subplots[n].update_ax(self._original_transform[n - 5])
 
     def set_figure_layout(self, event=None, **kwargs):
         if "override" in kwargs:
