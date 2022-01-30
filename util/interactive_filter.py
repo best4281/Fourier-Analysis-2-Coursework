@@ -1,12 +1,10 @@
 from abc import abstractmethod
 import enum
-from inspect import signature
 import traceback
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons, Button, Slider, RadioButtons, RangeSlider
-from scipy import ndimage
 from PIL import Image
 
 
@@ -86,21 +84,28 @@ class InteractionWidgets:
 
 
 class FilterBase:
-    def __init__(self, rows, cols, filter_generator=None, initial_args=[], initial_kwargs={}):
+    def __init__(self, name, rows, cols, filter_generator=None, adjustable=1, initial_args=[], initial_kwargs={}):
         """
         Base class for filters.
         :param rows: number of rows in the filter array
         :param cols: number of columns in the filter array
         :param filter_generator: function that generates the filter array
+        :param adjustable: number of sliders that can be adjusted
         :param initial_args: initial values for the arguments of the filter function.
         these args should be representing the adjustable parameters and sliders should be implemented to adjust them.
         :param initial_kwargs: initial values for the keyword arguments of the filter function
         :param kwargs: additional arguments for the filter function
         """
+        self.name = name
         self.rows = rows
         self.cols = cols
         self._filter_generator = filter_generator
-        self.args_values = initial_args
+        if initial_args:
+            self.args_values = initial_args
+        elif isinstance(adjustable, int):
+            self.args_values = [1] * adjustable
+        else:
+            raise ValueError("initial_args and/or must be specified")
         self.kwargs_values = initial_kwargs
         if filter_generator is None:
             self.filter_array = np.ones((rows, cols))
@@ -129,15 +134,21 @@ class FilterBase:
             if tmp.shape == (self.rows, self.cols):
                 self.filter_array = tmp
                 self._filter_generator = func
-                if len(self.args_values) + len(self.kwargs_values) != len(signature(func).parameters) - 2:
-                    self.args_values = [0] * (len(signature(func).parameters) - 2)
 
             else:
                 raise ValueError(f"Filter array shape does not match {self.filter_array.shape} and {tmp.shape}")
-        except Exception:
-            traceback.print_exc()
-            print("Filter array cannot be generated, using default (no filtering)")
-            self.filter_array = np.ones((self.rows, self.cols))
+        except:
+            try:
+                tmp = func((self.rows, self.cols), *self.args_values, **self.kwargs_values)
+                if tmp.shape == (self.rows, self.cols):
+                    self.filter_array = tmp
+                    self._filter_generator = func
+                else:
+                    raise ValueError(f"Filter array shape does not match {self.filter_array.shape} and {tmp.shape}")
+            except Exception:
+                traceback.print_exc()
+                print("Filter array cannot be generated, using default (no filtering)")
+                self.filter_array = np.ones((self.rows, self.cols))
 
     def set_active(self, active, binded_fig=None):
         self.apply_button.ax.set_visible(active)
@@ -331,7 +342,7 @@ class InteractiveFilterFigure:
     def __init__(
         self,
         original_image,
-        starter_filter: str = "ideal_band_pass",
+        starter_filter: str = "Ideal Bandpass Filter",
         labels=[
             "Original Image",
             "Grayscale",
@@ -403,6 +414,7 @@ class InteractiveFilterFigure:
         print("2D Fourier Transform completed. Initializing matplotlib figure...")
         self._labels = labels
         self._initial_visibility = initial_visibility
+        self._starter_filter = starter_filter
         self.visible_axes = np.sum(self._initial_visibility)
         self.fig = plt.figure(**kwargs)
         self.gridspec = self.fig.add_gridspec(**gridspec)
@@ -424,11 +436,58 @@ class InteractiveFilterFigure:
             ImageSubplot(self.inverse_fft, labels[7], initial_visibility[7], "gray", lambda im: np.abs(np.real(im)))
         )
 
+        self.filters = {
+            "Ideal Highpass Filter": (
+                OneCutoffFilter(
+                    "Ideal Highpass Filter",
+                    self._fft.shape[0],
+                    self._fft.shape[1],
+                    filter_generator=hpf_generator,
+                    initial_args=[int(self._max_fft_dim / 10)],
+                ),
+                {
+                    "valmin": 0,
+                    "valmax": int(self._max_fft_dim / 2),
+                    "valstep": 1,
+                    "valinit": int(self._max_fft_dim / 10),
+                    "initcolor": "red",
+                },
+            ),
+            "Ideal Bandpass Filter": (
+                TwoCutoffFilter(
+                    "Ideal Bandpass Filter",
+                    self._fft.shape[0],
+                    self._fft.shape[1],
+                    filter_generator=bpf_generator,
+                    initial_args=[int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)],
+                ),
+                {
+                    "label": "Cutoff Frequency",
+                    "valmin": 0,
+                    "valmax": int(self._max_fft_dim / 2),
+                    "valstep": 1,
+                    "valinit": (int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)),
+                },
+            ),
+        }
+        for fil in self.filters.values():
+            fil[0].make_sliders(**fil[1])
+
         self.widgets = {
-            "axes_checkbox": InteractionWidgets(
-                0.05,
+            "filter_radiobuttons": InteractionWidgets(
+                0.01,
+                0.62,
+                0.18,
+                0.25,
+                WidgetType.RADIOBUTTONS,
+                self.set_filter,
+                labels=list(self.filters.keys()),
+                active=[*self.filters.keys()].index(starter_filter),
+            ),
+            "axes_checkbuttons": InteractionWidgets(
+                0.01,
                 0.35,
-                0.1,
+                0.18,
                 0.25,
                 WidgetType.CHECKBUTTONS,
                 self.arrange_subplots,
@@ -446,39 +505,30 @@ class InteractiveFilterFigure:
             ),
         }
 
-        self.filters = {
-            "ideal_high_pass": (
-                OneCutoffFilter(
-                    *self._fft.shape, filter_generator=hpf_generator, initial_args=[int(self._max_fft_dim / 10)]
-                ),
-                {
-                    "valmin": 0,
-                    "valmax": int(self._max_fft_dim / 2),
-                    "valstep": 1,
-                    "valinit": int(self._max_fft_dim / 10),
-                    "initcolor": "red",
-                },
-            ),
-            "ideal_band_pass": (
-                TwoCutoffFilter(
-                    *self._fft.shape,
-                    filter_generator=bpf_generator,
-                    initial_args=[int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)],
-                ),
-                {
-                    "label": "Cutoff Frequency",
-                    "valmin": 0,
-                    "valmax": int(self._max_fft_dim / 2),
-                    "valstep": 1,
-                    "valinit": (int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)),
-                },
-            ),
-        }
-
-        for fil in self.filters.values():
-            fil[0].make_sliders(**fil[1])
         self.arrange_subplots()
-        self.filters["ideal_band_pass"][0].set_active(True, self)
+        self.filters[starter_filter][0].set_active(True, self)
+
+    def add_filter(self, new_filter: FilterBase, **sliderkwargs):
+        self.filters[new_filter.name] = (new_filter, sliderkwargs)
+        self.fig.delaxes(self.widgets["filter_radiobuttons"].ax)
+        self.widgets["filter_radiobuttons"] = (
+            InteractionWidgets(
+                0.01,
+                0.62,
+                0.18,
+                0.25,
+                WidgetType.RADIOBUTTONS,
+                self.set_filter,
+                labels=list(self.filters.keys()),
+                active=[*self.filters.keys()].index(self._starter_filter),
+            ),
+        )
+        self.filters[new_filter.name][0].make_sliders(**sliderkwargs)
+
+    def set_filter(self, filter_name: str):
+        print("Setting filter to", filter_name)
+        self.filters[filter_name][0].set_active(True, self)
+        self.fig.canvas.draw()
 
     def calc_filter(self, new_filter_array: np.ndarray):
         if self.filter_array.shape != new_filter_array.shape:
@@ -508,14 +558,14 @@ class InteractiveFilterFigure:
             visibility = self._initial_visibility
         self.visible_axes = np.sum(visibility)
         eql = 0
-        self.widgets["axes_checkbox"].disconnect_callback()
+        self.widgets["axes_checkbuttons"].disconnect_callback()
         for i, subplot in enumerate(self.subplots):
             if subplot.visible != visibility[i]:
                 subplot.visible = visibility[i]
-                self.widgets["axes_checkbox"].widget.set_active(i)
+                self.widgets["axes_checkbuttons"].widget.set_active(i)
             else:
                 eql += 1
-        self.widgets["axes_checkbox"].connect_callback()
+        self.widgets["axes_checkbuttons"].connect_callback()
         if eql == len(self.subplots):
             return
         self.arrange_subplots()
