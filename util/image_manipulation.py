@@ -92,9 +92,7 @@ class Interactive2DFFT:
         self.fig = plt.figure(**kwargs)
         self.check = CheckButtons(plt.axes([0.05, 0.4, 0.1, 0.15]), labels, visibility)
         self.check.on_clicked(self.arrange_pictures)
-        self.reset_button = Button(
-            plt.axes([0.05, 0.325, 0.1, 0.05]), "Reset figure to initial state"
-        )
+        self.reset_button = Button(plt.axes([0.05, 0.325, 0.1, 0.05]), "Reset figure to initial state")
 
         self.reset_button.on_clicked(self.reset_figure)
         self.toggle_brush = Button(plt.axes([0.05, 0.575, 0.1, 0.05]), "Enable eraser")
@@ -116,9 +114,7 @@ class Interactive2DFFT:
                 facecolor="black",
                 visible=self.display_images[i].visible,
             )
-            self.display_images[i].ax.imshow(
-                self.display_images[i](), cmap="gray" if i != 0 else None
-            )
+            self.display_images[i].ax.imshow(self.display_images[i](), cmap="gray" if i != 0 else None)
         plt.draw()
 
     def arrange_pictures(self, label=None):
@@ -154,17 +150,8 @@ class Interactive2DFFT:
     def __enable_brush(self, event=None):
         plt.ion()
         if self.brush is None:
-            brush_size = int(
-                (
-                    np.minimum(
-                        self.original_image.image.shape[0], self.original_image.image.shape[1]
-                    )
-                    / 40
-                )
-            )
-            self.brush = BrushHandler(
-                self, brush_size=brush_size, max_brush_size=brush_size * 6, name="Eraser"
-            )
+            brush_size = int((np.minimum(self.original_image.image.shape[0], self.original_image.image.shape[1]) / 40))
+            self.brush = BrushHandler(self, brush_size=brush_size, max_brush_size=brush_size * 6, name="Eraser")
             self.brush.update_brush_preview()
             self.fft_mask = np.ones(self.fft.image.shape)
             self.tmp_ax = self.fig.add_subplot(
@@ -268,11 +255,7 @@ class BrushHandler:
             )
 
     def on_press(self, event):
-        if (
-            event.inaxes is not None
-            and event.button == 1
-            and not self.fig.canvas.widgetlock.locked()
-        ):
+        if event.inaxes is not None and event.button == 1 and not self.fig.canvas.widgetlock.locked():
             if not isinstance(event.inaxes, SubplotBase):
                 return
             else:

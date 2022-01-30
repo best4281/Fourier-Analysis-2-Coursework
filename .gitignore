@@ -148,3 +148,4 @@ cython_debug/
 media/
 animation/
 numpytest/
+test.py
