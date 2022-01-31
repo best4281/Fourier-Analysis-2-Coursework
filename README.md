@@ -12,10 +12,10 @@ In this repository, you will find the interactive experience of how image filter
 - [Setup](#setup)
 - [Features](#features)
   - [main.py](#mainpy)
-  - [fft_eraser.py](#fft_eraser.py)
-- [Challenges](#challenge)
-  - [1. Ideal Low Pass Filter](challenge-1-ideal-low-pass-filter)
-  - [2. Your Filter](challenge-2-your-filter)
+  - [fft_eraser.py](#fft_eraserpy)
+- [Challenges](#challenges)
+  - [1. Ideal Low Pass Filter](#challenge-1-ideal-low-pass-filter)
+  - [2. Your Filter](#challenge-2-your-filter)
 - [Closing words](#closing-words)
 
 ## **Background**
