@@ -1,6 +1,7 @@
 from abc import abstractmethod
 import traceback
 import numpy as np
+from scipy.ndimage import fourier_gaussian
 from util.widget_handling import InteractionWidgets, WidgetType
 
 
@@ -101,12 +102,10 @@ class OneCutoffFilter(FilterBase):
     def make_sliders(self, label="Cutoff Frequency", **kwargs):
         if self.apply_button is not None:
             return
-        self.sliders.append(
-            InteractionWidgets(0.1, 0.9, 0.8, 0.03, WidgetType.SLIDER, label="Cutoff Frequency", **kwargs)
-        )
+        self.sliders.append(InteractionWidgets(0.2, 0.06, 0.6, 0.03, WidgetType.SLIDER, label=label, **kwargs))
         self.sliders[0].ax.set_visible(False)
         self.apply_button = InteractionWidgets(
-            0.8, 0.9, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
+            0.85, 0.05, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
         )
         self.apply_button.disconnect_callback()
         self.apply_button.ax.set_visible(False)
@@ -132,9 +131,9 @@ class TwoCutoffFilter(FilterBase):
             return
         self.sliders.append(
             InteractionWidgets(
-                0.1,
-                0.9,
-                0.8,
+                0.2,
+                0.06,
+                0.6,
                 0.03,
                 WidgetType.RANGESLIDER,
                 label=label,
@@ -143,7 +142,7 @@ class TwoCutoffFilter(FilterBase):
         )
         self.sliders[0].ax.set_visible(False)
         self.apply_button = InteractionWidgets(
-            0.8, 0.9, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
+            0.85, 0.05, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
         )
         self.apply_button.ax.set_visible(False)
 
@@ -170,11 +169,13 @@ class ManyParamsFilter(FilterBase):
             return
         i = 0
         for param, widgetkwargs in kwargs.items():
-            self.sliders.append(InteractionWidgets(0.1, 0.9, 0.8, 0.03, WidgetType.SLIDER, label=param, **widgetkwargs))
+            self.sliders.append(
+                InteractionWidgets(0.2, 0.01 + i * 0.04, 0.6, 0.03, WidgetType.SLIDER, label=param, **widgetkwargs)
+            )
             self.sliders[i].ax.set_visible(False)
             i += 1
         self.apply_button = InteractionWidgets(
-            0.8, 0.9, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
+            0.85, 0.05, 0.1, 0.05, WidgetType.BUTTON, self.update_array, label="Apply parameter(s)"
         )
         self.apply_button.ax.set_visible(False)
 
@@ -313,3 +314,16 @@ def bpf_generator(rows, cols, cutoff_1=None, cutoff_2=None):
             ) ** 2 <= cutoff_2 ** 2:
                 bpf[i][j] = 1  # if inside the annulus, keep the frequency
     return bpf
+
+
+def low_gaussian_generator(rows, cols, radius=None):
+    if radius is None:
+        radius = 1
+    return np.fft.fftshift(fourier_gaussian(np.ones((rows, cols)), radius))
+
+
+def high_gaussian_generator(rows, cols, radius=None):
+    if radius is None:
+        radius = 1
+    ones_arr = np.ones((rows, cols))
+    return ones_arr - np.fft.fftshift(fourier_gaussian(ones_arr, radius))

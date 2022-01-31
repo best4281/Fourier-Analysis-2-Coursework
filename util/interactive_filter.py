@@ -1,10 +1,21 @@
+from math import inf
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backend_bases import MouseButton
 from PIL import Image
 
 from util.widget_handling import InteractionWidgets, WidgetType
-from util.filter import OneCutoffFilter, TwoCutoffFilter, ManyParamsFilter, FilterBase, bpf_generator, hpf_generator
+from util.filter import (
+    OneCutoffFilter,
+    TwoCutoffFilter,
+    ManyParamsFilter,
+    FilterBase,
+    bpf_generator,
+    hpf_generator,
+    low_gaussian_generator,
+    high_gaussian_generator,
+)
 
 
 class ImageSubplot:
@@ -74,19 +85,19 @@ class InteractiveFilterFigure:
     def __init__(
         self,
         original_image,
-        starter_filter: str = "Ideal Bandpass Filter",
+        starter_filter: str = "Ideal Highpass Filter",
         labels=[
             "Original Image",
             "Grayscale",
-            "magnitude of 2D FFT without shift (log scale)",
-            "magnitude of 2D FFT (log scale)",
+            "not shifted 2D FFT (log)",
+            "shifted 2D FFT (log)",
             "phase of 2D FFT",
             "Filter array",
-            "Filtered 2D FFT (log scale)",
+            "Filtered 2D FFT (log)",
             "Inverse 2D FFT",
         ],
         initial_visibility: np.array = np.array([True, False, False, True, True, True, True, True]),
-        gridspec: dict = {"nrows": 2, "ncols": 12, "left": 0.2, "right": 0.95},
+        gridspec: dict = {"nrows": 2, "ncols": 12, "left": 0.2, "right": 0.95, "bottom": 0.15},
         **kwargs,
     ):
         """
@@ -152,7 +163,9 @@ class InteractiveFilterFigure:
         self.gridspec = self.fig.add_gridspec(**gridspec)
         self.subplots = []
         self.subplots.append(ImageSubplot(original_image, labels[0], initial_visibility[0]))
-        self.subplots.append(ImageSubplot(self._grayscale_image, labels[1], initial_visibility[1], "gray"))
+        self.subplots.append(
+            ImageSubplot(self._grayscale_image, labels[1], initial_visibility[1], "gray", vmin=0, vmax=255)
+        )
         self.subplots.append(
             ImageSubplot(self._non_shifted_fft, labels[2], initial_visibility[2], "gray", lambda im: np.log(np.abs(im)))
         )
@@ -162,10 +175,24 @@ class InteractiveFilterFigure:
         self.subplots.append(ImageSubplot(self._fft, labels[4], initial_visibility[4], "gray", lambda im: np.angle(im)))
         self.subplots.append(ImageSubplot(self.filter_array, labels[5], initial_visibility[5], "gray", vmin=0, vmax=1))
         self.subplots.append(
-            ImageSubplot(self.filtered_fft, labels[6], initial_visibility[6], "gray", lambda im: np.log(np.abs(im)))
+            ImageSubplot(
+                self.filtered_fft,
+                labels[6],
+                initial_visibility[6],
+                "gray",
+                lambda im: np.log(np.abs(im)),
+            )
         )
         self.subplots.append(
-            ImageSubplot(self.inverse_fft, labels[7], initial_visibility[7], "gray", lambda im: np.abs(np.real(im)))
+            ImageSubplot(
+                self.inverse_fft,
+                labels[7],
+                initial_visibility[7],
+                "gray",
+                lambda im: np.abs(np.real(im)),
+                vmin=0,
+                vmax=255,
+            )
         )
 
         self.filters = {
@@ -175,13 +202,13 @@ class InteractiveFilterFigure:
                     self._fft.shape[0],
                     self._fft.shape[1],
                     filter_generator=hpf_generator,
-                    initial_args=[int(self._max_fft_dim / 10)],
+                    initial_args=[int(self._max_fft_dim / 100)],
                 ),
                 {
                     "valmin": 0,
-                    "valmax": int(self._max_fft_dim / 2),
+                    "valmax": int(self._max_fft_dim / 4),
                     "valstep": 1,
-                    "valinit": int(self._max_fft_dim / 10),
+                    "valinit": int(self._max_fft_dim / 100),
                     "initcolor": "red",
                 },
             ),
@@ -191,14 +218,46 @@ class InteractiveFilterFigure:
                     self._fft.shape[0],
                     self._fft.shape[1],
                     filter_generator=bpf_generator,
-                    initial_args=[int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)],
+                    initial_args=[int(self._max_fft_dim) / 100, (self._max_fft_dim / 10)],
                 ),
                 {
-                    "label": "Cutoff Frequency",
+                    "label": "Cutoff Frequency Range",
                     "valmin": 0,
-                    "valmax": int(self._max_fft_dim / 2),
+                    "valmax": int(self._max_fft_dim / 4),
                     "valstep": 1,
-                    "valinit": (int(self._max_fft_dim) / 6, (self._max_fft_dim / 4)),
+                    "valinit": (int(self._max_fft_dim) / 100, (self._max_fft_dim / 10)),
+                },
+            ),
+            "Gaussian Lowpass Filter": (
+                OneCutoffFilter(
+                    "Gaussian Lowpass Filter",
+                    self._fft.shape[0],
+                    self._fft.shape[1],
+                    filter_generator=low_gaussian_generator,
+                    initial_args=[1],
+                ),
+                {
+                    "label": "Sigma",
+                    "valmin": 0,
+                    "valmax": 25,
+                    "valinit": 1,
+                    "initcolor": "red",
+                },
+            ),
+            "Gaussian Highpass Filter": (
+                OneCutoffFilter(
+                    "Gaussian Highpass Filter",
+                    self._fft.shape[0],
+                    self._fft.shape[1],
+                    filter_generator=high_gaussian_generator,
+                    initial_args=[1],
+                ),
+                {
+                    "label": "Sigma",
+                    "valmin": 0,
+                    "valmax": 25,
+                    "valinit": 1,
+                    "initcolor": "red",
                 },
             ),
         }
@@ -207,9 +266,9 @@ class InteractiveFilterFigure:
 
         self.widgets = {
             "filter_radiobuttons": InteractionWidgets(
-                0.01,
-                0.62,
-                0.18,
+                0.02,
+                0.15,
+                0.16,
                 0.25,
                 WidgetType.RADIOBUTTONS,
                 self.set_filter,
@@ -217,9 +276,9 @@ class InteractiveFilterFigure:
                 active=[*self.filters.keys()].index(starter_filter),
             ),
             "axes_checkbuttons": InteractionWidgets(
-                0.01,
-                0.35,
-                0.18,
+                0.02,
+                0.63,
+                0.16,
                 0.25,
                 WidgetType.CHECKBUTTONS,
                 self.arrange_subplots,
@@ -227,13 +286,13 @@ class InteractiveFilterFigure:
                 actives=self._initial_visibility,
             ),
             "filter_reset_button": InteractionWidgets(
-                0.05, 0.28, 0.1, 0.05, WidgetType.BUTTON, self.reset_filter, label="Reset applied filter"
+                0.05, 0.42, 0.1, 0.05, WidgetType.BUTTON, self.reset_filter, label="Show no filter"
             ),
             "layout_reset_button": InteractionWidgets(
-                0.05, 0.21, 0.1, 0.05, WidgetType.BUTTON, self.set_figure_layout, label="Reset subplots layout"
+                0.05, 0.49, 0.1, 0.05, WidgetType.BUTTON, self.set_figure_layout, label="Reset subplots layout"
             ),
             "view_reset_button": InteractionWidgets(
-                0.05, 0.14, 0.1, 0.05, WidgetType.BUTTON, self.reset_view, label="Reset view in all subplot"
+                0.05, 0.56, 0.1, 0.05, WidgetType.BUTTON, self.reset_view, label="Reset view in all subplot"
             ),
         }
 
@@ -249,9 +308,9 @@ class InteractiveFilterFigure:
         self.fig.delaxes(self.widgets["filter_radiobuttons"].ax)
         self.widgets["filter_radiobuttons"] = (
             InteractionWidgets(
-                0.01,
-                0.62,
-                0.18,
+                0.02,
+                0.15,
+                0.16,
                 0.25,
                 WidgetType.RADIOBUTTONS,
                 self.set_filter,
@@ -262,7 +321,6 @@ class InteractiveFilterFigure:
         self.filters[new_filter.name][0].make_sliders(**sliderkwargs)
 
     def set_filter(self, filter_name: str):
-        print("Setting filter to", filter_name)
         self.filters[filter_name][0].set_active(True, self)
         self.fig.canvas.draw()
 
@@ -280,10 +338,16 @@ class InteractiveFilterFigure:
         self.fig.canvas.draw()
 
     def reset_filter(self, event=None):
+        if event is not None:
+            if event.button is not MouseButton.LEFT:
+                return
         for n in (5, 6, 7):
             self.subplots[n].update_ax(self._original_transform[n - 5])
 
     def set_figure_layout(self, event=None, **kwargs):
+        if event is not None:
+            if event.button is not MouseButton.LEFT:
+                return
         if "override" in kwargs:
             if len(kwargs["override"]) != len(self.subplots):
                 print("Override length is not equal to subplots length. Override is ignored.")
@@ -307,6 +371,9 @@ class InteractiveFilterFigure:
         self.arrange_subplots()
 
     def reset_view(self, event=None):
+        if event is not None:
+            if event.button is not MouseButton.LEFT:
+                return
         plt.setp(
             [subplot.ax for subplot in self.subplots],
             xlim=(0, self._fft.shape[1]),
