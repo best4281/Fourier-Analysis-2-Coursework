@@ -68,7 +68,12 @@ You just have to ignore it and run the file for the first time. But with your kn
 Yes indeed, the low pass filter is missing from the filter selection panel. Don't worry, this is intentional, and also your first challenge.
 #### Instruction
 Using the outline code in [main.py](/main.py), complete the function `ideal_low_pass_array` to make the low pass filter work when the program runs. 
-This function should take the dimension of the array (`rows` and `columns`), and the radius or `cutoff frequency`. 
+This function should take the dimension of the array (`rows` and `columns`), and the radius or `cutoff frequency`.
+```Python
+def ideal_low_pass_array(rows:int , columns:int, cutoff_frequency:int) -> np.ndarray:
+  # Take in 3 integers, return 2-dimensional array (matrix) of shape rows × columns
+  return filter_array
+```
 
 The output is expected to be a 2-dimensional array with a specified dimension. This output must also be ready to multiply *(element by element)* with the Fourier transform spectrum.
 This means each member of the array **must** have values of only 0 or 1 (since this is an ideal filter).
