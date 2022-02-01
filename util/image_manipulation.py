@@ -114,7 +114,9 @@ class Interactive2DFFT:
                 facecolor="black",
                 visible=self.display_images[i].visible,
             )
-            self.display_images[i].ax.imshow(self.display_images[i](), cmap="gray" if i != 0 else None)
+            self.display_images[i].ax.imshow(
+                self.display_images[i](), cmap="gray" if self.display_images[i]().ndim == 2 else None
+            )
         plt.draw()
 
     def arrange_pictures(self, label=None):
@@ -340,6 +342,8 @@ def extract_channel(img, channel: int):
 
 def isolate_channel(img, channel: int):
     """Isolate the specified channel of the input image."""
+    if img.ndim == 2:
+        return img
     if channel not in range(3):
         raise ValueError("channel must be 0, 1, or 2.")
     channel_img = np.copy(img)

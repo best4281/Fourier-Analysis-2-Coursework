@@ -85,7 +85,7 @@ class InteractiveFilterFigure:
     def __init__(
         self,
         original_image,
-        starter_filter: str = "Ideal Highpass Filter",
+        starter_filter: str = "Gaussian Highpass Filter",
         labels=[
             "Original Image",
             "Grayscale",
@@ -162,7 +162,14 @@ class InteractiveFilterFigure:
         self.fig = plt.figure(**kwargs)
         self.gridspec = self.fig.add_gridspec(**gridspec)
         self.subplots = []
-        self.subplots.append(ImageSubplot(original_image, labels[0], initial_visibility[0]))
+        self.subplots.append(
+            ImageSubplot(
+                self._original_image,
+                labels[0],
+                initial_visibility[0],
+                "gray" if self._original_image.ndim == 2 else None,
+            )
+        )
         self.subplots.append(
             ImageSubplot(self._grayscale_image, labels[1], initial_visibility[1], "gray", vmin=0, vmax=255)
         )
@@ -196,19 +203,35 @@ class InteractiveFilterFigure:
         )
 
         self.filters = {
-            "Ideal Highpass Filter": (
+            "Gaussian Highpass Filter": (
                 OneCutoffFilter(
-                    "Ideal Highpass Filter",
+                    "Gaussian Highpass Filter",
                     self._fft.shape[0],
                     self._fft.shape[1],
-                    filter_generator=hpf_generator,
-                    initial_args=[int(self._max_fft_dim / 100)],
+                    filter_generator=high_gaussian_generator,
+                    initial_args=[1],
                 ),
                 {
+                    "label": "Sigma",
                     "valmin": 0,
-                    "valmax": int(self._max_fft_dim / 4),
-                    "valstep": 1,
-                    "valinit": int(self._max_fft_dim / 100),
+                    "valmax": 25,
+                    "valinit": 1,
+                    "initcolor": "red",
+                },
+            ),
+            "Gaussian Lowpass Filter": (
+                OneCutoffFilter(
+                    "Gaussian Lowpass Filter",
+                    self._fft.shape[0],
+                    self._fft.shape[1],
+                    filter_generator=low_gaussian_generator,
+                    initial_args=[1],
+                ),
+                {
+                    "label": "Sigma",
+                    "valmin": 0,
+                    "valmax": 25,
+                    "valinit": 1,
                     "initcolor": "red",
                 },
             ),
@@ -228,35 +251,19 @@ class InteractiveFilterFigure:
                     "valinit": (int(self._max_fft_dim) / 100, (self._max_fft_dim / 10)),
                 },
             ),
-            "Gaussian Lowpass Filter": (
+            "Ideal Highpass Filter": (
                 OneCutoffFilter(
-                    "Gaussian Lowpass Filter",
+                    "Ideal Highpass Filter",
                     self._fft.shape[0],
                     self._fft.shape[1],
-                    filter_generator=low_gaussian_generator,
-                    initial_args=[1],
+                    filter_generator=hpf_generator,
+                    initial_args=[int(self._max_fft_dim / 100)],
                 ),
                 {
-                    "label": "Sigma",
                     "valmin": 0,
-                    "valmax": 25,
-                    "valinit": 1,
-                    "initcolor": "red",
-                },
-            ),
-            "Gaussian Highpass Filter": (
-                OneCutoffFilter(
-                    "Gaussian Highpass Filter",
-                    self._fft.shape[0],
-                    self._fft.shape[1],
-                    filter_generator=high_gaussian_generator,
-                    initial_args=[1],
-                ),
-                {
-                    "label": "Sigma",
-                    "valmin": 0,
-                    "valmax": 25,
-                    "valinit": 1,
+                    "valmax": int(self._max_fft_dim / 4),
+                    "valstep": 1,
+                    "valinit": int(self._max_fft_dim / 100),
                     "initcolor": "red",
                 },
             ),

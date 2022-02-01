@@ -39,6 +39,10 @@ def ideal_low_pass_array(rows, cols, cutoff_frequency):
 
 
 if __name__ == "__main__":
+    # You can change the font size here if the text is too big.
+    font_settings = {"font.size": 10}
+    plt.rcParams.update(font_settings)
+
     image = Image.open("images/frame01284.png")
     # image = Image.open("images/bright.png")
 
