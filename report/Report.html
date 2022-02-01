@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Report.md</title>
+  <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+  
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #abb2bf;
+  background: #282c34;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd;
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75;
+}
+
+.hljs-literal {
+  color: #56b6c2;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta-string {
+  color: #98c379;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e6c07b;
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+<link rel="stylesheet" href="file:///c%3A//Users//thiti//.vscode//extensions//yzane.markdown-pdf-1.4.4//css_styles//github-markdown.css" type="text/css">
+  <script type="text/javascript"
+    src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });
+</script>
+  <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+        ? 'dark'
+        : 'default'
+    });
+  </script>
+  <h1 align="center">2D Image and Fourier Analysis</h1>
+<hr>
+<h3 id="table-of-contents"><strong>Table of Contents</strong></h3>
+<ul>
+<li><a href="#background"><strong>Background</strong></a></li>
+<li><a href="#2-dimensional-fourier-transform"><strong>2-dimensional Fourier Transform</strong></a></li>
+<li><a href="#filters"><strong>Filters</strong></a>
+<ul>
+<li><a href="#1-low-pass-and-high-pass-filter">1. Low Pass and High Pass filter</a></li>
+<li><a href="#2-band-pass-filter-and-band-stop-filter">2. Band Pass filter (and Band Stop Filter)</a></li>
+<li><a href="#3-other-filters">3. Other filters</a></li>
+</ul>
+</li>
+<li><a href="#coding"><strong>Coding</strong></a>
+<ul>
+<li><a href="#fourier-transform">Fourier Transform</a></li>
+<li><a href="#filtering">Filtering</a></li>
+</ul>
+</li>
+<li><a href="#challenges"><strong>Challenges</strong></a>
+<ul>
+<li><a href="#challenge-1-ideal-low-pass-filter">Challenge 1: Ideal Low Pass Filter</a></li>
+<li><a href="#challenge-2-use-of-filters">Challenge 2: Use of Filters</a></li>
+</ul>
+</li>
+<li><a href="#solution"><strong>Solution</strong></a>
+<ul>
+<li><a href="#challenge-1-solution">Challenge 1: Solution</a></li>
+<li><a href="#challenge-2-discussion">Challenge 2: Discussion</a></li>
+</ul>
+</li>
+<li><a href="#references"><strong>References</strong></a>
+<ul>
+<li><a href="#articles">Articles</a></li>
+<li><a href="#coding-documentation">Coding documentation</a></li>
+</ul>
+</li>
+<li><a href="#source-code"><strong>Source code</strong></a></li>
+</ul>
+<hr>
+<div style="page-break-before:always"></div>
+<div style="text-align: justify">
+<h2 id="background"><strong>Background</strong></h2>
+<p>From the beginning, I aimed to make a coding challenge as a continuation for the contents we studied in <em><strong>Fourier Analysis 2</strong></em> - such as Convolution, Discrete Fourier Transform, and Filtering. While I was searching for the topics, I have stumbled upon some interesting articles. One of them is <a href="https://thepythoncodingbook.com/2021/08/30/2d-fourier-transform-in-python-and-fourier-synthesis-of-images/">this article</a>, which highlights the fact that image is a combination of numerous sine waves (so-called gratings) as shown below.</p>
+<p align="center">
+    <img src="https://i0.wp.com/thepythoncodingbook.com/wp-content/uploads/2021/08/grating_sine.png?resize=1536,644&ssl=1" alt="Grating and sinusoidal wave" width="350">
+    <br>
+    <a href="https://videopress.com/embed/Z9xWcJw4">
+        <img src="https://videos.files.wordpress.com/Z9xWcJw4/elizabeth_tower_mp4_hd_1080p.original.jpg" alt="Watch how gratings make up an image" width="400">
+    <br>
+    Click to see the video on how a combination of gratings can make up an image
+    </a>
+</p>
+<p>With the intuition we have gained throughout studying the Fourier Analysis course, the sum of sine waves with different  &quot;<em>specifications</em>&quot; could somehow be related to Fourier Transform. That intuition would be correct, as this is also a form of Fourier Transform, but in 2 dimensions - as known as <strong>2D Fourier Transform</strong>.</p>
+<h2 id="2-dimensional-fourier-transform"><strong>2-dimensional Fourier Transform</strong></h2>
+<p>Simply speaking, 2D Fourier Transform is doing 1D Fourier Transform that we learned twice - along $x$ and $y$ axis.
+Thus, the mathematical definition of 2D Fourier Transform is given by,
+$$
+\mathcal{F}(u,v) = \int_{-\infty}^\infty  \int_{-\infty}^\infty f(x,y)e^{-i2{\pi}(ux+uy)}dx,dy
+$$
+And its inverse is given by,
+$$
+f(x,y) = \int_{-\infty}^\infty  \int_{-\infty}^\infty  \mathcal{F}(u,v)e^{i2{\pi}(ux+uy)}du,dv
+$$</p>
+<p>However, in the concept of image manipulation, we cannot use the continuous and infinite range Fourier Transform. The reasons are:-</p>
+<ol>
+<li>An image is made up of pixel, which is not continuous.</li>
+<li>An image has size (width and height), which is not infinite.</li>
+</ol>
+<p>Hence, the actual transform done on an image is a discrete Fourier Transform.</p>
+<p>For an image with $m$ columns ($m$ pixels in width $x$ axis) and $n$ rows ($n$ pixels in height or $y$ axis), its <strong>2-dimensional discrete Fourier Transform</strong> is given by,
+$$
+\mathcal{F}(m,n)= \frac{1}{MN}\sum_{x=0}^{M-1}\sum_{y=0}^{N-1} f(x,y) e^{-2\pi i\bigl(\frac{x}{M}m+\frac{y}{N}n\bigr)},
+$$
+where $m=0,1,2,\ldots,M-1$ and $n=0,1,2,\ldots,N-1$</p>
+<p>The result of the transform is another image with the same dimension, where values of $\mathcal{F}(m,n)$ are <strong>Fourier coefficients</strong>. However, the Fourier coefficients start at $0$ frequency and range to the end at 1 period or $2\pi$. To aid the design of filters in <a href="#filters">the next section</a>, the frequency spectrum is shifted to range from $-\pi$ to $\pi$ instead. An example is shown in the figure below.</p>
+<p align="center">
+    <img src="./fft_shift.png" width="625">
+</p>
+<p>And its inverse (while not shifting frequency) - <strong>2-dimensional inverse discrete Fourier Transform</strong> is given by,
+$$
+f(x,y)=MN\sum_{m=0}^{M-1}\sum_{n=0}^{N-1} \mathcal{F}(m,n) e^{2\pi i\bigl(\frac{m}{M}x+\frac{n}{N}y\bigr)},
+$$
+where $x=0,1,2,\ldots,M-1$ and $y=0,1,2,\ldots,N-1$</p>
+<p>This inverse transform would yield the original image if $\mathcal{F}(m,n)$ was not modified.</p>
+<div style="page-break-before:always"></div>
+<h2 id="filters"><strong>Filters</strong></h2>
+<p>Similar to what we have done to filter noises in an audio file, We can also filter noises in 2D images. <a href="https://legacy.imagemagick.org/Usage/fourier/">Another article</a> has shown how multiplication the to the obtained Fourier domain spectrum can &quot;<em>filter</em>&quot; the image in color domain. As a default (no filtering), every Fourier Coefficient in $\mathcal{F}(m,n)$ is multiplied by 1. To filter something out, that member of $\mathcal{F}(m,n)$ will be multiplied by something less than 1. Therefore, the filter array will have values of members varying between 0 and 1 (ignore that you can also amplify by multiplying with a value more than 1).</p>
+<p>As we obtained the frequency-shifted Fourier Transform as explained earlier, we can now design filters to manipulate it. The figure of the 2D frequency domain has low frequency coefficients at the center (around $0$) and high frequency outside. Combining this with the knowledge of filters we have learned in this course, we can start to design the filters.</p>
+<h4 id="1-low-pass-and-high-pass-filter">1. Low Pass and High Pass filter</h4>
+<p>We have learned that these two filters have a <strong>cutoff frequency</strong> where it changes filter from blocking to letting the value pass, or vice versa. In 2-dimension frequency domain, the appropriate value to represent how high the frequency is the <strong>magnitude</strong> or distance from the center point. Therefore, the cutoff frequency could be referred to as a radius of the filter.</p>
+<p>Since we have established the cutoff frequency of the ideal filter, this will be the boundary to areas of 1 and 0 of the filter.</p>
+<ul>
+<li><em><strong>Low Pass Filter:</strong></em> contains members with value $1$ are inside the circle, and members with value $0$ are outside the circle.</li>
+<li><em><strong>High Pass Filter:</strong></em> members with value $0$ are inside the circle, and members with value $1$ are outside the circle.</li>
+</ul>
+<p>When we let the value of $1$ represents the white color and $0$ represent the black color, we can see the visual representation of the filter as shown on the next page.</p>
+<p align="center">
+    <img src="./lpf-hpf.png" width=400>
+</p>
+<h4 id="2-band-pass-filter-and-band-stop-filter">2. Band Pass filter (and Band Stop Filter)</h4>
+<p>Simply speaking, this filter is similar to Low Pass and High Pass Filter featured above, but with 2 cutoff frequencies where the value change from $0$ to $1$ and back to $0$ again. ($1\rightarrow0\rightarrow1$ for Band Stop Filter) The visual representation of the filter is shown below.</p>
+<p align="center">
+    <img src="./bpf-bsf.png" width=400>
+</p>
+<h4 id="3-other-filters">3. Other filters</h4>
+<p>As discussed earlier, values inside a filter do not have to only be 0 or 1, they can be something in between. One example is a Gaussian filter. This filter has more resemblance to a real-world Low Pass and High Pass filter where the cutoff is a gradient. The formula to calculate the value of each member for <strong>Low Pass Gaussian filter</strong> is given by
+$$
+F(x,y) = e^{-2\pi^2\sigma^2(x^2+y^2)}
+$$
+And <strong>High Pass Gaussian filter</strong> is a compliment given by
+$$
+F(x,y) = 1-e^{-2\pi^2\sigma^2(x^2+y^2)}
+$$
+$\sigma$ will be the parameter that determine the size of the circle of the filter. The visual representation of each filter is shown below.</p>
+<p align="center">
+    <img src="./gaussian_filters.png" width=400>
+</p>
+<h2 id="coding"><strong>Coding</strong></h2>
+<h3 id="fourier-transform">Fourier Transform</h3>
+<p><strong>*Important*</strong> Every image in the process will be in grayscale, but this also applies to colored images, a colored image is made up of Red, Green, and Blue images.</p>
+<p>To perform fast Fourier Transform using a computer, a pre-made library in Python can be used. In this case, <a href="https://numpy.org/">NumPy</a> library is a suitable library for doing this 2-dimensional Fourier Transform.</p>
+<ol>
+<li>Load up an image and use <a href="https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html"><code>numpy.fft.fft2</code></a> to perform 2-dimensional Fourier Transform.</li>
+<li>Shift the low-frequency components to the middle using <a href="https://numpy.org/doc/stable/reference/generated/numpy.fft.fftshift.html"><code>numpy.fft.fftshift</code></a></li>
+<li>Apply a filter to the array obtained in <strong>step 2.</strong> by multiplying members at the same location of two arrays (Explained later)</li>
+<li>Shift the low-frequency components back to the edge <a href="https://numpy.org/doc/stable/reference/generated/numpy.fft.ifftshift.html"><code>numpy.fft.ifftshift</code></a></li>
+<li>Perform 2-dimensional Inverse Fourier Transform using <a href="https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html"><code>numpy.fft.ifft2</code></a>, and the final image after applying the filter is obtained.</li>
+</ol>
+<p>The result of each step is displayed using <a href="https://matplotlib.org/">matplotlib</a> library.</p>
+<h3 id="filtering">Filtering</h3>
+<p>As explained earlier, we have to generate an array that has the same size as Fourier Transformed image in step 2 of the previous section. The values of each member in the said array must be between 0 and 1.</p>
+<p>Some advanced filters (such as <strong>Gaussian filters</strong>) array can be obtained using a pre-made Python library. To make a Gaussian filter, <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.fourier_gaussian.html"><code>scipy.ndimage.fourier_gaussian</code></a> is used. The result is Gaussian Low Pass Filter. To obtain Gaussian High Pass Filter, the obtained Gaussian Low Pass Filter is subtracted from the array where 1 is the value of every member - made by <a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html"><code>numpy.ones</code></a></p>
+<p>For the ideal filters, some of them are left as a challenge. Therefore, it will be explained in the <a href="#solution">challenge solution section</a> instead.</p>
+<div style="page-break-before:always"></div>
+<h2 id="challenges"><strong>Challenges</strong></h2>
+<p>Although you can choose to take the challenge immediately, it is recommended to read about what different part of the 2D FFT spectrum represents first. There are many well-explained resources in the reference of my report, the one I am recommended as a QuickStart guide is <a href="https://thepythoncodingbook.com/2021/08/30/2d-fourier-transform-in-python-and-fourier-synthesis-of-images/">this one</a>. (From the <em>beginning</em> to <em><a href="https://thepythoncodingbook.com/2021/08/30/2d-fourier-transform-in-python-and-fourier-synthesis-of-images/#:~:text=The%20Fourier%20Transform%20and%20The%20Grating%20Parameters">The Fourier Transform and The Grating Parameters</a></em> part)</p>
+<h3 id="challenge-1-ideal-low-pass-filter">Challenge 1: Ideal Low Pass Filter</h3>
+<p>When you opened the <a href="https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/main.py">main.py</a> file, you will be greeted with some parts of codes that have been commented out.
+You just have to ignore it and run the file for the first time. But with your knowledge from what we have heard in our <em><strong>Fourier Analysis 2</strong></em> (Challenge number <strong>3</strong>), You noticed that there is one missing type of filter for you to select. (Aside from the fancy Gaussian filters)
+Yes indeed, the low pass filter is missing from the filter selection panel. Don't worry, this is intentional, and also your first challenge.</p>
+<p><strong>Instruction</strong></p>
+<p>Using the outline code in <a href="https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/main.py">main.py</a>, complete the function <code>ideal_low_pass_array</code> to make the low pass filter work when the program runs.
+This function should take the dimension of the array (<code>rows</code> and <code>columns</code>), and the radius or <code>cutoff frequency</code>.</p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">ideal_low_pass_array</span><span class="hljs-params">(rows:int , columns:int, cutoff_frequency:int)</span> -&gt; np.ndarray:</span>
+  <span class="hljs-comment"># Take in 3 integers, return 2-dimensional array (matrix) of shape rows × columns</span>
+  <span class="hljs-keyword">return</span> filter_array
+</div></code></pre>
+<p>The output is expected to be a 2-dimensional array with a specified dimension. This output must also be ready to multiply <em>(element by element)</em> with the Fourier transform spectrum.
+This means each member of the array <strong>must</strong> have values of only 0 or 1 (since this is an ideal filter).</p>
+<p>Further instruction is provided using comments in <a href="https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/main.py">main.py</a>.
+After the implementation, <strong>don't forget to add the function to the interactive figure by using the code in the commented area</strong>
+When the filter is working in the interactive figure, try applying different values of <code>Cutoff frequency</code> (aka radius) and observe the result.</p>
+<div style="page-break-before:always"></div>
+<h3 id="challenge-2-use-of-filters">Challenge 2: Use of Filters</h3>
+<p>After playing with the filters, you gained a basic idea about how filters can be used to alter the image. You can either start discussing or try to use the <a href="https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/fft_eraser.py"><code>fft_eraser.py</code></a> on different images to gain more understanding (try it with <a href="https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/images/clown.png"><code>clown.png</code></a> and <a href="https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/images/lunar.tiff"><code>lunar.tiff</code></a> inside provided <a href="https://github.com/best4281/Fourier-Analysis-2-Coursework/tree/main/images">image folder</a>!)</p>
+<p><strong>Instruction</strong></p>
+<p>In simple words, discuss what can different filters do to the original image, and how they behave in that way. Moreover, think about how can this be applied further, or what can be the good application of these filters.</p>
+<div style="page-break-before:always"></div>
+<h2 id="solution"><strong>Solution</strong></h2>
+<h3 id="challenge-1-solution">Challenge 1: Solution</h3>
+<p>As explained in the <a href="#1-low-pass-and-high-pass-filter">Filter section</a>,</p>
+<blockquote>
+<p><em><strong>Low Pass Filter:</strong></em> contains members with value $1$ are inside the circle, and members with value $0$ are outside the circle.</p>
+</blockquote>
+<p>Steps to make a low pass filter array using Python is as follows:</p>
+<ol>
+<li>In an array, the index can represent the coordinate of a pixel in an image. To make a circle at the center of the array, we must first find the center of the array by halving the number of <code>rows</code> and <code>columns</code>.</li>
+<li>Create an array of zeros with the same number of rows and columns using <a href="https://numpy.org/doc/stable/reference/generated/numpy.zeros.html"><code>numpy.zeros</code></a></li>
+<li>For every element that has a distance from coordinate (<code>mid_row</code>, <code>mid_column</code>) less than (<code>cutoff_frequency</code>), set the value of that element to <strong>1</strong>.</li>
+</ol>
+<p>The resulting code from the steps above is shown below.</p>
+<pre class="hljs"><code><div><span class="hljs-keyword">import</span> numpy <span class="hljs-keyword">as</span> np
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">ideal_low_pass_array</span><span class="hljs-params">(rows, cols, cutoff_frequency)</span>:</span>
+    mid_row = int(rows / <span class="hljs-number">2</span>) <span class="hljs-comment"># Find middle row</span>
+    mid_column = int(columns / <span class="hljs-number">2</span>) <span class="hljs-comment"># Find middle column</span>
+    lowpass_filter_array = np.zeros((rows, columns)) <span class="hljs-comment"># Create an array of zeros</span>
+
+    <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> range(columns):
+        <span class="hljs-keyword">for</span> y <span class="hljs-keyword">in</span> range(rows): <span class="hljs-comment"># For every coordinates</span>
+            <span class="hljs-keyword">if</span> (x - mid_column) ** <span class="hljs-number">2</span> + (y - mid_row) ** <span class="hljs-number">2</span> &lt;= cutoff_frequency ** <span class="hljs-number">2</span>:
+                lowpass_filter_array[y][x] = <span class="hljs-number">1</span>
+                <span class="hljs-comment"># If inside the circle, keep the coefficient (Change value to 1)</span>
+    <span class="hljs-keyword">return</span> lowpass_filter_array
+</div></code></pre>
+<p>On the other hand, you can also create an array of ones using <a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html"><code>numpy.ones</code></a>, and then set every value outside the circle to <strong>0</strong>. This method will also yield the same Low Pass Filter array.</p>
+<div style="page-break-before:always"></div>
+<h3 id="challenge-2-discussion">Challenge 2: Discussion</h3>
+<p>From the observation, there are some noticeable result as listed:</p>
+<ol>
+<li><strong>High Pass Filter</strong> left only the edges of objects in the original image. This is due to the sudden change in the value of color, the sudden change can refer to the high frequency, which is the remaining frequencies after applying High Pass Filter. This can be optimized further to use as an edge detection algorithm.</li>
+<li><strong>Low Pass Filter</strong> makes the original image more blurry. As seen from the video in the <a href="#background">Background section</a> of this report, when the number of iterations is low, the generated image does have a shape that resembles the original image, yet lacks a lot of fine details. Similar to when high-frequency components got left off when Low Pass Filter is applied.</li>
+<li>Ideal Filters left artifacts (rippling waves) in the final image, while Gaussians Filters does not leave artifacts as much. Since the cutoff is sudden in an ideal filter, the frequency does not smoothen out and the wave can be easily distinguished in color domain.</li>
+</ol>
+<p align="center">
+<img src="./result_gaussian_ideal.png" width=400>
+</p>
+<ol start="4">
+<li><strong>Band Pass Filter</strong> does filter out only the features of the image that we are interested in, but it is hard to adjust it right.</li>
+<li>An image with a repetitive noise pattern will have a high coefficient value at the certain point in the spectrum, usually further from the center. After removing these notches, the resulting image becomes clearer.</li>
+</ol>
+<div style="page-break-before:always"></div>
+<h2 id="references"><strong>References</strong></h2>
+<h4 id="articles">Articles</h4>
+<ol>
+<li>Craig Chen, <strong><a href="https://hicraigchen.medium.com/,digital-image-processing-using-fourier-transform-in-python-bcb49424fd82">Digital Image Processing using Fourier Transform in Python</a></strong></li>
+<li>Fred Weinhaus, <strong><a href="https://legacy.imagemagick.org/Usage/fourier/">ImageMagick v6 Examples -- Fourier Transforms</a></strong></li>
+<li>Raoof Naushad, <strong><a href="https://medium.datadriveninvestor.com/fourier-transform-for-image-processing-in-python-from-scratch-b96f68a6c30d">Fourier Transform for Image Processing in Python from scratch.</a></strong></li>
+<li>Stephen Gruppetta, <strong><a href="https://thepythoncodingbook.com/2021/08/30/2d-fourier-transform-in-python-and-fourier-synthesis-of-images/">How to Create Any Image Using Only Sine Functions</a></strong></li>
+<li>University of Oviedo, Numerical Computing, <strong><a href="https://www.unioviedo.es/compnum/labs/PYTHON/lab06_Fourier2D.html">Fourier Transform. Applications to Image Processing</a></strong></li>
+<li>University of Oxford, Information Engineering, <strong><a href="https://www.robots.ox.ac.uk/~az/lectures/ia/lect2.pdf">2D Fourier transforms and applications</a></strong></li>
+<li><a href="https://dsp.stackexchange.com/questions/37320/shifting-in-dft-fft"><strong>Shifting in DFT (FFT)</strong></a></li>
+</ol>
+<h4 id="coding-documentation">Coding documentation</h4>
+<ol>
+<li><a href="https://matplotlib.org/3.5.1/index.html">Matplotlib 3.5.1 documentation</a></li>
+<li><a href="https://numpy.org/doc/stable/index.html">NumPy Documentation</a></li>
+<li><a href="https://docs.scipy.org/doc/scipy/">SciPy Documentation</a></li>
+</ol>
+<h2 id="source-code"><strong>Source code</strong></h2>
+<p>My source code for this project can be found in <a href="https://github.com/best4281/Fourier-Analysis-2-Coursework">this GitHub repository</a>.</p>
+<p>This report was written in <a href="https://www.markdownguide.org/">Markdown language</a>, compiled and export using a <a href="https://code.visualstudio.com/">Visual Studio Code</a> extension called <a href="https://marketplace.visualstudio.com/items?itemName=yzane.markdown-pdf">Markdown PDF</a>, and mathematical formula is rendered using <a href="https://www.mathjax.org/">MathJax</a>.</p>
+</div>
+
+</body>
+
+</html>
