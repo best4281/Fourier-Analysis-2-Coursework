@@ -76,15 +76,15 @@ You can use the eraser to erase the part of the unwanted frequency in Fourier do
 
 Although you can choose to take the challenge immediately, it is recommended to read about what different part of the 2D FFT spectrum represents first. There are many well-explained resources in the reference of my report, the one I am recommended as a QuickStart guide is [this one](https://thepythoncodingbook.com/2021/08/30/2d-fourier-transform-in-python-and-fourier-synthesis-of-images/). (From the *beginning* to *[The Fourier Transform and The Grating Parameters](https://thepythoncodingbook.com/2021/08/30/2d-fourier-transform-in-python-and-fourier-synthesis-of-images/#:~:text=The%20Fourier%20Transform%20and%20The%20Grating%20Parameters)* part)
 
-### **Challenge 1: Ideal Low Pass Filter**
+### Challenge 1: Ideal Low Pass Filter
 
-When you opened the [main.py](./main.py) file, you will be greeted with some parts of codes that have been commented out.
+When you opened the [main.py](https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/main.py) file, you will be greeted with some parts of codes that have been commented out.
 You just have to ignore it and run the file for the first time. But with your knowledge from what we have heard in our ***Fourier Analysis 2*** (Challenge number **3**), You noticed that there is one missing type of filter for you to select. (Aside from the fancy Gaussian filters)
 Yes indeed, the low pass filter is missing from the filter selection panel. Don't worry, this is intentional, and also your first challenge.
 
-#### Instruction
+**Instruction**
 
-Using the outline code in [main.py](./main.py), complete the function `ideal_low_pass_array` to make the low pass filter work when the program runs.
+Using the outline code in [main.py](https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/main.py), complete the function `ideal_low_pass_array` to make the low pass filter work when the program runs.
 This function should take the dimension of the array (`rows` and `columns`), and the radius or `cutoff frequency`.
 
 ```Python
@@ -96,15 +96,15 @@ def ideal_low_pass_array(rows:int , columns:int, cutoff_frequency:int) -> np.nda
 The output is expected to be a 2-dimensional array with a specified dimension. This output must also be ready to multiply *(element by element)* with the Fourier transform spectrum.
 This means each member of the array **must** have values of only 0 or 1 (since this is an ideal filter).
 
-Further instruction is provided using comments in [main.py](./main.py).
+Further instruction is provided using comments in [main.py](https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/main.py).
 After the implementation, **don't forget to add the function to the interactive figure by using the code in the commented area**
 When the filter is working in the interactive figure, try applying different values of `Cutoff frequency` (aka radius) and observe the result.
 
-### **Challenge 2: Use of Filters**
+### Challenge 2: Use of Filters
 
-After playing with the filters, you gained a basic idea about how filters can be used to alter the image.
+After playing with the filters, you gained a basic idea about how filters can be used to alter the image. You can either start discussing or try to use the [`fft_eraser.py`](https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/fft_eraser.py) on different images to gain more understanding (try it with [`clown.png`](https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/images/clown.png) and [`lunar.tiff`](https://raw.githubusercontent.com/best4281/Fourier-Analysis-2-Coursework/main/images/lunar.tiff) inside provided [image folder](https://github.com/best4281/Fourier-Analysis-2-Coursework/tree/main/images)!)
 
-#### Instruction
+**Instruction**
 
 In simple words, discuss what can different filters do to the original image, and how they behave in that way. Moreover, think about how can this be applied further, or what can be the good application of these filters.
 
