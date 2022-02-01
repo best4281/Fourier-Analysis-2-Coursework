@@ -5,7 +5,7 @@ from util.interactive_filter import InteractiveFilterFigure, OneCutoffFilter
 from util.plotter import plt_maximize
 
 
-def ideal_low_pass_array(rows, cols, cutoff_frequency):
+def ideal_low_pass_array(rows, columns, cutoff_frequency):
     """
     A function to generate a 2D array of ideal low pass filter.
     :param rows: number of rows in the array (matrix), i.e. height of the image
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     """
     plt_fig.add_filter(
         OneCutoffFilter(
-            "Low Pass Test",
+            "Ideal Lowpass filter",
             plt_fig.fft_shape[0],
             plt_fig.fft_shape[1],
             filter_generator=ideal_low_pass_array,
